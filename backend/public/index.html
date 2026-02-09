@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UX Scanner — AI-Powered UX & SEO Analysis</title>
+
+<!-- Bootstrap 5 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+/* ─── TOKENS ─── */
+:root {
+  --bg-primary: #0a0c0f;
+  --bg-card: #111417;
+  --bg-card-hover: #161a1f;
+  --bg-input: #0e1115;
+  --border: rgba(255,255,255,.07);
+  --border-focus: rgba(99,199,255,.35);
+  --text-primary: #eef0f3;
+  --text-secondary: #7a8494;
+  --text-muted: #4e5868;
+  --accent: #63c7ff;
+  --accent-glow: rgba(99,199,255,.18);
+  --accent-dark: #3a9fd4;
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,.1);
+  --amber: #fbbf24;
+  --amber-bg: rgba(251,191,36,.1);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,.1);
+  --purple: #c084fc;
+  --purple-bg: rgba(192,132,252,.1);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 24px rgba(0,0,0,.3);
+  --shadow-glow: 0 0 40px rgba(99,199,255,.08);
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f7f8fa;
+  --bg-input: #f4f6f8;
+  --border: rgba(0,0,0,.08);
+  --border-focus: rgba(40,120,200,.3);
+  --text-primary: #1a1e24;
+  --text-secondary: #5a6370;
+  --text-muted: #8e95a0;
+  --accent: #2878c8;
+  --accent-glow: rgba(40,120,200,.12);
+  --accent-dark: #1e5fa0;
+  --shadow: 0 2px 20px rgba(0,0,0,.06);
+  --shadow-glow: 0 0 40px rgba(40,120,200,.06);
+}
+
+/* ─── RESET ─── */
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  transition: background .4s, color .4s;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ─── GRAIN OVERLAY ─── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999; opacity: .6;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ═══════════════════ HEADER ═══════════════════ */
+.topbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(12px);
+  padding: 20px 0;
+}
+.topbar__logo { display: flex; align-items: center; gap: 10px; }
+.topbar__logo-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.topbar__logo-icon svg { width: 18px; height: 18px; }
+.topbar__name { 
+  font-family: var(--font-display); 
+  font-weight: 700; 
+  font-size: 1.15rem; 
+  letter-spacing: -.02em; 
+}
+.topbar__name span { color: var(--accent); }
+
+.theme-toggle {
+  width: 40px; height: 22px; border-radius: 11px;
+  background: var(--border); border: none; cursor: pointer;
+  position: relative;
+}
+.theme-toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--text-secondary);
+  transition: left .3s, background .3s;
+}
+[data-theme="light"] .theme-toggle::after { left: 21px; background: var(--accent); }
+
+/* ─── HERO ─── */
+.hero { text-align: center; padding: 52px 0 36px; }
+.hero__badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-glow); 
+  border: 1px solid rgba(99,199,255,.25);
+  border-radius: 20px; padding: 5px 14px;
+  font-size: .78rem; font-weight: 500; color: var(--accent);
+  letter-spacing: .03em; text-transform: uppercase; margin-bottom: 18px;
+}
+.hero__badge .dot { 
+  width: 6px; height: 6px; border-radius: 50%; 
+  background: var(--green); 
+  animation: pulse-dot 2s infinite; 
+}
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.hero__title {
+  font-family: var(--font-display);
+  font-weight: 800; 
+  font-size: clamp(1.9rem, 4vw, 2.65rem);
+  letter-spacing: -.03em; 
+  line-height: 1.15;
+  background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero__sub {
+  color: var(--text-secondary); 
+  font-size: 1.02rem;
+  max-width: 520px; 
+  margin: 14px auto 0;
+}
+
+/* ═══════════════════ CARDS ═══════════════════ */
+.card-custom {
+  background: var(--bg-card); 
+  border: 1px solid var(--border);
+  border-radius: var(--radius); 
+  padding: 22px 20px;
+  box-shadow: var(--shadow);
+  transition: transform .25s;
+  position: relative; 
+  overflow: hidden;
+}
+.card-custom:hover { 
+  transform: translateY(-2px); 
+}
+.card-custom::before {
+  content: ''; 
+  position: absolute; 
+  top: 0; left: 0; right: 0; 
+  height: 3px;
+  background: var(--card-accent, var(--accent));
+  opacity: 0; 
+  transition: opacity .3s;
+}
+.card-custom:hover::before { opacity: 1; }
+
+.card--total { --card-accent: var(--accent); }
+.card--ux { --card-accent: var(--amber); }
+.card--seo { --card-accent: var(--red); }
+.card--ai { --card-accent: var(--purple); }
+
+.card__icon {
+  width: 38px; height: 38px; 
+  border-radius: 10px;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  font-size: 20px;
+}
+.card--total .card__icon { background: var(--accent-glow); color: var(--accent); }
+.card--ux .card__icon { background: var(--amber-bg); color: var(--amber); }
+.card--seo .card__icon { background: var(--red-bg); color: var(--red); }
+.card--ai .card__icon { background: var(--purple-bg); color: var(--purple); }
+
+.card__value {
+  font-family: var(--font-display); 
+  font-weight: 800;
+  font-size: 2rem; 
+  letter-spacing: -.03em;
+  margin-top: 16px; 
+  line-height: 1;
+  opacity: 0; 
+  transform: translateY(8px);
+  transition: opacity .5s .15s, transform .5s .15s;
+}
+.card__value.visible { opacity: 1; transform: translateY(0); }
+.card__label { 
+  font-size: .78rem; 
+  color: var(--text-secondary); 
+  margin-top: 6px; 
+  font-weight: 500; 
+}
+
+/* ═══════════════════ PANELS ═══════════════════ */
+.panel {
+  background: var(--bg-card); 
+  border: 1px solid var(--border);
+  border-radius: var(--radius); 
+  padding: 24px;
+  margin-bottom: 24px; 
+  box-shadow: var(--shadow);
+}
+
+/* ═══════════════════ BUTTONS ═══════════════════ */
+.btn-scan {
+  padding: 14px 28px; 
+  border: none; 
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff; 
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 18px var(--accent-glow);
+  transition: transform .2s;
+  display: inline-flex; 
+  align-items: center; 
+  gap: 8px;
+}
+.btn-scan:hover { 
+  transform: translateY(-1px); 
+  color: #fff;
+}
+.btn-scan .spinner { 
+  display: none; 
+  width: 18px; 
+  height: 18px; 
+  border: 2.5px solid rgba(255,255,255,.3); 
+  border-top-color: #fff; 
+  border-radius: 50%; 
+  animation: spin .6s linear infinite; 
+}
+.btn-scan.scanning .btn-scan__text { display: none; }
+.btn-scan.scanning .spinner { display: block; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════ INPUT ═══════════════════ */
+.scan-input {
+  background: var(--bg-input); 
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); 
+  color: var(--text-primary);
+  font-family: var(--font-mono); 
+  font-size: .88rem;
+  padding: 14px 18px 14px 46px;
+}
+.scan-input:focus {
+  background: var(--bg-input);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  color: var(--text-primary);
+}
+.scan-input::placeholder { color: var(--text-muted); }
+
+.input-icon {
+  position: absolute; 
+  left: 15px; 
+  top: 50%; 
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* ═══════════════════ TABLE ═══════════════════ */
+.table-custom {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table-custom th {
+  text-align: left; 
+  font-size: .72rem; 
+  font-weight: 600;
+  color: var(--text-muted); 
+  text-transform: uppercase; 
+  padding: 0 0 12px; 
+  border-bottom: 1px solid var(--border);
+}
+.table-custom td {
+  padding: 14px 0; 
+  border-bottom: 1px solid var(--border);
+  font-size: .88rem;
+}
+.table-custom tr:last-child td { border-bottom: none; }
+.table-custom tr {
+  opacity: 0; 
+  transform: translateX(-12px); 
+  transition: opacity .4s, transform .4s;
+}
+.table-custom tr.visible { opacity: 1; transform: translateX(0); }
+
+/* ═══════════════════ BADGES ═══════════════════ */
+.tag-type {
+  display: inline-flex; 
+  align-items: center; 
+  gap: 5px;
+  font-size: .72rem; 
+  font-weight: 600; 
+  padding: 3px 9px; 
+  border-radius: 6px;
+}
+.tag-type--ux { background: var(--amber-bg); color: var(--amber); }
+.tag-type--seo { background: var(--red-bg); color: var(--red); }
+.tag-dot { 
+  width: 5px; 
+  height: 5px; 
+  border-radius: 50%; 
+  background: currentColor; 
+}
+
+.severity {
+  display: inline-flex; 
+  align-items: center; 
+  gap: 5px;
+  font-size: .78rem; 
+  font-weight: 600;
+}
+.severity--high { color: var(--red); }
+.severity--medium { color: var(--amber); }
+.severity--low { color: var(--green); }
+
+/* ═══════════════════ AI CARDS ═══════════════════ */
+.ai-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+  overflow: hidden;
+  opacity: 0; 
+  transform: translateY(10px);
+  transition: opacity .5s, transform .5s;
+}
+.ai-card.visible { opacity: 1; transform: translateY(0); }
+.ai-card:hover { border-color: rgba(192,132,252,.3); }
+
+.ai-card__header {
+  padding: 14px 18px; 
+  cursor: pointer;
+  background: var(--bg-input);
+  transition: background .25s;
+  user-select: none;
+}
+.ai-card__header:hover { background: var(--bg-card-hover); }
+
+.ai-card__chevron {
+  transition: transform .3s;
+}
+.ai-card.open .ai-card__chevron { transform: rotate(90deg); }
+
+.ai-card__body {
+  padding: 0 18px;
+  max-height: 0; 
+  overflow: hidden;
+  transition: max-height .5s, padding .3s;
+}
+.ai-card.open .ai-card__body { 
+  max-height: 600px; 
+  padding: 18px; 
+}
+
+.ai-card__fix-box {
+  background: var(--green-bg); 
+  border: 1px solid rgba(74,222,128,.15);
+  border-radius: var(--radius-sm); 
+  padding: 12px 14px;
+  color: var(--green);
+  font-weight: 500;
+}
+
+/* ═══════════════════ PLACEHOLDER ═══════════════════ */
+.placeholder {
+  text-align: center; 
+  padding: 52px 20px;
+  opacity: .55;
+}
+.placeholder svg { 
+  width: 44px; 
+  height: 44px; 
+  color: var(--text-muted); 
+  margin-bottom: 14px; 
+}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- ─── TOPBAR ─── -->
+<header class="topbar">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="topbar__logo">
+        <div class="topbar__logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="topbar__name">UX <span>Scanner</span></div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()"></button>
+    </div>
+  </div>
+</header>
+
+<!-- ─── MAIN ─── -->
+<div class="container py-4">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero__badge">
+      <span class="dot"></span> Live · Powered 
+    </div>
+    <h1 class="hero__title">Understand. Diagnose. Improve.</h1>
+    <p class="hero__sub"> 
+      AI-powered UX &amp; SEO analysis for modern websites — 100% AI-driven recommendations.
+    </p>
+  </section>
+
+  <!-- Scan Input -->
+  <div class="panel mb-4">
+    <div class="row g-3">
+      <div class="col-lg-9">
+        <div class="position-relative">
+          <span class="input-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M2 12h20"/>
+            </svg>
+          </span>
+          <input 
+            type="text" 
+            class="form-control scan-input" 
+            id="urlInput" 
+            placeholder="https://yourwebsite.com"
+            value="https://html.foduu.com/shalevet/"
+          />
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <button class="btn btn-scan w-100" id="scanBtn" onclick="startScan()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <span class="btn-scan__text">Start Scan</span>
+          <div class="spinner"></div>
+        </button>
+      </div>
+    </div>
+    <div class="mt-3">
+      <small class="text-muted">
+        🤖 100% AI-powered SEO analysis. Enter URL and let AI find all issues.
+      </small>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4" id="summaryCards">
+    <div class="col-md-6 col-lg-3">
+      <div class="card-custom card--total">
+        <div class="card__icon">📊</div>
+        <div class="card__value" data-target="0">0</div>
+        <div class="card__label">Page Score</div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <div class="card-custom card--ux">
+        <div class="card__icon">🔴</div>
+        <div class="card__value" data-target="0">0</div>
+        <div class="card__label">Critical Issues</div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <div class="card-custom card--seo">
+        <div class="card__icon">💡</div>
+        <div class="card__value" data-target="0">0</div>
+        <div class="card__label">Quick Wins</div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <div class="card-custom card--ai">
+        <div class="card__icon">✨</div>
+        <div class="card__value" data-target="0">0</div>
+        <div class="card__label">Recommendations</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issues Table -->
+  <div class="panel mb-4" id="rawPanel">
+    <h5 class="mb-3">Detected Issues</h5>
+    <div id="rawContent">
+      <div class="placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <p>Enter a URL and hit <strong>Start Scan</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Insights -->
+  <div class="panel" style="border: 1px solid rgba(192,132,252,.25);">
+    <h5 class="mb-3">AI Insights & Recommendations</h5>
+    <div id="aiContent">
+      <div class="placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9.663 17h4.673M12 3v1"/>
+        </svg>
+        <p>AI insights will appear here after scan</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Main Script -->
+<script>
+// ─── CONFIG ─────────────────────────────────────
+const API_URL = '/scan';
+
+// ─── THEME TOGGLE ───────────────────────────────
+function toggleTheme() {
+  const currentTheme = $('body').attr('data-theme');
+  $('body').attr('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
+}
+
+// ─── SCAN FUNCTION ──────────────────────────────
+async function startScan() {
+  const url = $('#urlInput').val().trim();
+  
+  if (!url) {
+    alert('Please enter a URL');
+    return;
+  }
+  
+  // Show loading
+  $('#scanBtn').addClass('scanning');
+  resetUI();
+  
+  try {
+    console.log('🚀 Scanning:', url);
+    
+    // Call API with jQuery AJAX
+    const response = await $.ajax({
+      url: API_URL,
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        url: url,
+        options: {
+          multiPage: true,  // ✅ Enable multi-page scan
+          maxPages: 5       // ✅ Scan 5 pages
+        }
+      })
+    });
+    
+    console.log('✅ Response:', response);
+
+    localStorage.setItem("uxScanResult", JSON.stringify(response));
+
+    
+    // Display results
+    if (response.scanType === 'multi-page-ai') {
+      displayMultiPageResults(response);
+    } else {
+      displaySinglePageResults(response);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    showError(error.responseJSON?.error || error.statusText || 'Scan failed');
+  } finally {
+    $('#scanBtn').removeClass('scanning');
+  }
+}
+
+// ─── RESET UI ───────────────────────────────────
+function resetUI() {
+  $('.card__value').removeClass('visible').text('0');
+  
+  $('#rawContent').html(`
+    <div class="placeholder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+      <p>Scanning...</p>
+    </div>
+  `);
+  
+  $('#aiContent').html(`
+    <div class="placeholder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M9.663 17h4.673M12 3v1"/>
+      </svg>
+      <p>Waiting for AI...</p>
+    </div>
+  `);
+}
+
+// ─── DISPLAY MULTI-PAGE RESULTS ────────────────
+function displayMultiPageResults(data) {
+  console.log('📊 Displaying multi-page results');
+  
+  const summary = data.summary || {};
+  const pages = data.pages || [];
+  const siteWide = data.siteWide || {};
+  
+  // Calculate total issues across all pages
+  let totalCritical = 0;
+  let totalQuickWins = 0;
+  let totalRecommendations = 0;
+  
+  pages.forEach(page => {
+    const analysis = page.aiAnalysis || {};
+    totalCritical += (analysis.criticalIssues || []).length;
+    totalQuickWins += (analysis.quickWins || []).length;
+    totalRecommendations += (analysis.recommendations || []).length;
+  });
+  
+  // Update summary cards
+  animateCard(0, Math.round(summary.averageScore || 0));
+  animateCard(1, totalCritical);
+  animateCard(2, totalQuickWins);
+  animateCard(3, totalRecommendations);
+  
+  // Render site-wide issues table
+  renderSiteWideIssues(siteWide);
+  
+  // Render per-page AI cards
+  renderMultiPageAICards(pages);
+}
+
+// ─── RENDER SITE-WIDE ISSUES ───────────────────
+function renderSiteWideIssues(siteWide) {
+  if (!siteWide || !siteWide.commonIssues || siteWide.commonIssues.length === 0) {
+    $('#rawContent').html(`
+      <div class="placeholder">
+        <p>No site-wide issues found! ✨</p>
+      </div>
+    `);
+    return;
+  }
+  
+  let rows = '';
+  siteWide.commonIssues.forEach((issue, i) => {
+    rows += `
+      <tr style="transition-delay:${i*60}ms">
+        <td>
+          <span class="tag-type tag-type--seo">
+            <span class="tag-dot"></span>SITE-WIDE
+          </span>
+        </td>
+        <td style="color: var(--text-primary);">${issue}</td>
+        <td>
+          <span class="severity severity--high">High</span>
+        </td>
+      </tr>
+    `;
+  });
+  
+  $('#rawContent').html(`
+    <div class="mb-3">
+      <h6 style="color: var(--accent); margin-bottom: 10px;">
+        🌐 Site-Wide Issues (affects all ${siteWide.totalPages || 'multiple'} pages)
+      </h6>
+      <p style="font-size: 0.85rem; color: var(--text-secondary);">
+        Site Score: <strong>${siteWide.score || 'N/A'}/100</strong>
+      </p>
+    </div>
+    <table class="table-custom">
+      <thead>
+        <tr>
+          <th style="width:100px">Scope</th>
+          <th>Issue</th>
+          <th style="width:100px">Priority</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `);
+  
+  // Animate rows
+  setTimeout(() => {
+    $('.table-custom tbody tr').each(function(i) {
+      $(this).delay(i * 70).queue(function() {
+        $(this).addClass('visible').dequeue();
+      });
+    });
+  }, 100);
+}
+
+// ─── RENDER MULTI-PAGE AI CARDS ────────────────
+function renderMultiPageAICards(pages) {
+  if (!pages || pages.length === 0) {
+    $('#aiContent').html(`
+      <div class="placeholder">
+        <p>No page analysis available</p>
+      </div>
+    `);
+    return;
+  }
+  
+  let html = '';
+  
+  pages.forEach((page, pageIdx) => {
+    const analysis = page.aiAnalysis || {};
+    const criticalIssues = analysis.criticalIssues || [];
+    const recommendations = analysis.recommendations || [];
+    const quickWins = analysis.quickWins || [];
+    const strengths = analysis.strengths || [];
+    const score = analysis.pageScore || 0;
+    
+    // Page header
+    html += `
+      <div class="mb-4 pb-3" style="border-bottom: 1px solid var(--border);">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h5 style="color: var(--accent); margin: 0;">
+              📄 Page ${page.pageNumber}: ${page.title || 'Untitled'}
+            </h5>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 5px 0 0;">
+              ${page.url}
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 1.5rem; font-weight: 800; color: ${score >= 70 ? 'var(--green)' : score >= 50 ? 'var(--amber)' : 'var(--red)'}">
+              ${score}
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">Score</div>
+          </div>
+        </div>
+        
+        ${quickWins.length > 0 ? `
+          <div style="background: var(--green-bg); border: 1px solid rgba(74,222,128,.2); border-radius: 8px; padding: 10px; margin-top: 10px;">
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--green); margin-bottom: 5px;">
+              ⚡ QUICK WINS (${quickWins.length})
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: var(--green);">
+              ${quickWins.slice(0, 3).map(win => `<li>${win}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    
+    // Critical Issues
+    criticalIssues.forEach((issue, i) => {
+      html += `
+        <div class="ai-card" style="transition-delay:${i*70}ms">
+          <div class="ai-card__header" onclick="toggleAICard(this)">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <svg class="ai-card__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+              <span class="tag-type tag-type--seo">
+                <span class="tag-dot"></span>CRITICAL
+              </span>
+              <span style="font-size:.86rem; font-weight:500; color: var(--text-primary);">
+                ${issue.title}
+              </span>
+            </div>
+          </div>
+          <div class="ai-card__body">
+            <div class="mb-3">
+              <div style="font-size:.7rem; font-weight:600; color:var(--amber); text-transform:uppercase; margin-bottom:6px;">
+                ⚠️ Why It Matters
+              </div>
+              <p style="font-size:.88rem; color:var(--text-secondary);">${issue.why}</p>
+            </div>
+            <div>
+              <div style="font-size:.7rem; font-weight:600; color:var(--green); text-transform:uppercase; margin-bottom:6px;">
+                ✓ Recommended Fix
+              </div>
+              <div class="ai-card__fix-box">${issue.fix}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    // Recommendations
+    recommendations.forEach((rec, i) => {
+      html += `
+        <div class="ai-card" style="transition-delay:${(criticalIssues.length + i)*70}ms">
+          <div class="ai-card__header" onclick="toggleAICard(this)">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <svg class="ai-card__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+              <span class="tag-type tag-type--ux">
+                <span class="tag-dot"></span>MEDIUM
+              </span>
+              <span style="font-size:.86rem; font-weight:500; color: var(--text-primary);">
+                ${rec.title}
+              </span>
+            </div>
+          </div>
+          <div class="ai-card__body">
+            <div>
+              <div style="font-size:.7rem; font-weight:600; color:var(--green); text-transform:uppercase; margin-bottom:6px;">
+                ✓ Recommended Fix
+              </div>
+              <div class="ai-card__fix-box">${rec.fix}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    // Strengths
+    if (strengths.length > 0) {
+      html += `
+        <div style="background: var(--green-bg); border: 1px solid rgba(74,222,128,.15); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+          <div style="font-size: 0.75rem; font-weight: 600; color: var(--green); margin-bottom: 8px;">
+            ✨ STRENGTHS
+          </div>
+          <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: var(--green);">
+            ${strengths.map(s => `<li>${s}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+    
+    // Separator between pages
+    if (pageIdx < pages.length - 1) {
+      html += `<hr style="border: none; border-top: 2px solid var(--border); margin: 30px 0;">`;
+    }
+  });
+  
+  $('#aiContent').html(html);
+  
+  // Animate cards
+  setTimeout(() => {
+    $('.ai-card').each(function(i) {
+      $(this).delay(i * 75).queue(function() {
+        $(this).addClass('visible').dequeue();
+      });
+    });
+    
+    // Auto-open first critical issue
+    setTimeout(() => {
+      $('.ai-card').first().addClass('open');
+    }, pages.length * 75 + 300);
+  }, 100);
+}
+
+// ─── DISPLAY SINGLE-PAGE RESULTS ────────────────
+function displaySinglePageResults(data) {
+  const analysis = data.analysis || data;
+  
+  const criticalIssues = analysis.criticalIssues || [];
+  const recommendations = analysis.recommendations || [];
+  const quickWins = analysis.quickWins || [];
+  const pageScore = analysis.pageScore || 50;
+  
+  // Update cards
+  animateCard(0, pageScore);
+  animateCard(1, criticalIssues.length);
+  animateCard(2, quickWins.length);
+  animateCard(3, recommendations.length);
+  
+  // Render table
+  renderIssuesTable([...criticalIssues, ...recommendations]);
+  
+  // Render AI cards
+  renderAICards([...criticalIssues, ...recommendations]);
+}
+
+// ─── ANIMATE CARD ───────────────────────────────
+function animateCard(index, targetValue) {
+  const $card = $('.card__value').eq(index);
+  const duration = 900;
+  const start = performance.now();
+  
+  function step(timestamp) {
+    const elapsed = timestamp - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(eased * targetValue);
+    
+    $card.text(current).addClass('visible');
+    
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    }
+  }
+  
+  requestAnimationFrame(step);
+}
+
+// ─── RENDER ISSUES TABLE ────────────────────────
+function renderIssuesTable(issues) {
+  if (!issues || issues.length === 0) {
+    $('#rawContent').html(`
+      <div class="placeholder">
+        <p>No issues found! ✨</p>
+      </div>
+    `);
+    return;
+  }
+  
+  let rows = '';
+  issues.forEach((issue, i) => {
+    const title = issue.title || issue.problem || 'Issue';
+    const impact = (issue.impact || 'medium').toLowerCase();
+    const type = impact === 'high' ? 'seo' : 'ux';
+    
+    rows += `
+      <tr style="transition-delay:${i*60}ms">
+        <td>
+          <span class="tag-type tag-type--${type}">
+            <span class="tag-dot"></span>${type.toUpperCase()}
+          </span>
+        </td>
+        <td style="color: var(--text-primary);">${title}</td>
+        <td>
+          <span class="severity severity--${impact}">
+            ${impact.charAt(0).toUpperCase() + impact.slice(1)}
+          </span>
+        </td>
+      </tr>
+    `;
+  });
+  
+  $('#rawContent').html(`
+    <table class="table-custom">
+      <thead>
+        <tr>
+          <th style="width:80px">Type</th>
+          <th>Problem</th>
+          <th style="width:100px">Priority</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `);
+  
+  // Animate rows
+  setTimeout(() => {
+    $('.table-custom tbody tr').each(function(i) {
+      $(this).delay(i * 70).queue(function() {
+        $(this).addClass('visible').dequeue();
+      });
+    });
+  }, 100);
+}
+
+// ─── RENDER AI CARDS (Single Page) ─────────────
+function renderAICards(issues) {
+  if (!issues || issues.length === 0) {
+    $('#aiContent').html(`
+      <div class="placeholder">
+        <p>No AI insights available</p>
+      </div>
+    `);
+    return;
+  }
+  
+  let html = '';
+  issues.forEach((issue, i) => {
+    const title = issue.title || issue.problem || 'Issue';
+    const why = issue.why || issue.impact || 'Affects user experience';
+    const fix = issue.fix || issue.recommendedFix || 'Review this issue';
+    const priority = issue.impact || 'medium';
+    const type = priority.toLowerCase() === 'high' ? 'seo' : 'ux';
+    
+    html += `
+      <div class="ai-card" style="transition-delay:${i*70}ms">
+        <div class="ai-card__header" onclick="toggleAICard(this)">
+          <div class="d-flex align-items-center gap-2">
+            <svg class="ai-card__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+            <span class="tag-type tag-type--${type}">
+              <span class="tag-dot"></span>${priority.toUpperCase()}
+            </span>
+            <span style="font-size:.86rem; font-weight:500;">${title}</span>
+          </div>
+        </div>
+        <div class="ai-card__body">
+          <div class="mb-3">
+            <div style="font-size:.7rem; font-weight:600; color:var(--amber); text-transform:uppercase; margin-bottom:6px;">
+              ⚠️ Why It Matters
+            </div>
+            <p style="font-size:.88rem; color:var(--text-secondary);">${why}</p>
+          </div>
+          <div>
+            <div style="font-size:.7rem; font-weight:600; color:var(--green); text-transform:uppercase; margin-bottom:6px;">
+              ✓ Recommended Fix
+            </div>
+            <div class="ai-card__fix-box">${fix}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  $('#aiContent').html(html);
+  
+  // Animate cards
+  setTimeout(() => {
+    $('.ai-card').each(function(i) {
+      $(this).delay(i * 75).queue(function() {
+        $(this).addClass('visible').dequeue();
+      });
+    });
+    
+    setTimeout(() => {
+      $('.ai-card').first().addClass('open');
+    }, issues.length * 75 + 300);
+  }, 100);
+}
+
+// ─── TOGGLE AI CARD ─────────────────────────────
+function toggleAICard(header) {
+  const $card = $(header).parent();
+  const wasOpen = $card.hasClass('open');
+  
+  $('.ai-card').removeClass('open');
+  
+  if (!wasOpen) {
+    $card.addClass('open');
+  }
+}
+
+// ─── SHOW ERROR ─────────────────────────────────
+function showError(message) {
+  $('#rawContent').html(`
+    <div class="placeholder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--red)">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4m0 4h.01"/>
+      </svg>
+      <p style="color: var(--red)"><strong>Error:</strong> ${message}</p>
+    </div>
+  `);
+
+}
+$(document).ready(function () {
+  const saved = localStorage.getItem("uxScanResult");
+
+  if (saved) {
+    const data = JSON.parse(saved);
+
+    if (data.scanType === 'multi-page-ai') {
+      displayMultiPageResults(data);
+    } else {
+      displaySinglePageResults(data);
+    }
+  }
+});
+
+</script>
+</body>
+</html> 

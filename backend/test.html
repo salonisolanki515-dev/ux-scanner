@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>UX Scanner Test</title>
+</head>
+<body>
+  <h1>Test UX Scanner</h1>
+  <input type="text" id="urlInput" placeholder="Enter URL" value="https://example.com">
+  <button onclick="scanWebsite()">Scan</button>
+  
+  <pre id="result"></pre>
+
+  <script>
+    async function scanWebsite() {
+      const url = document.getElementById('urlInput').value;
+      const resultDiv = document.getElementById('result');
+      
+      resultDiv.textContent = 'Scanning...';
+      
+      try {
+        const response = await fetch('http://localhost:3000/scan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url })
+        });
+        
+        const data = await response.json();
+        resultDiv.textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        resultDiv.textContent = 'Error: ' + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
